@@ -22,6 +22,28 @@ type RedisCacheProvider struct {
 	prefix string
 }
 
+var defaultCacheClient *RedisCacheProvider
+
+func Client() *RedisCacheProvider {
+	if defaultCacheClient == nil || defaultCacheClient.client == nil {
+		panic("redis cache provider not initialized")
+	}
+
+	return defaultCacheClient
+}
+
+func InitDefaultClient(cnf config_utils.RedisConfig, prefix string) error {
+	var err error
+	defaultCacheClient, err = NewClient(cnf, prefix)
+	if err != nil {
+		return err
+	}
+
+	Client()
+
+	return nil
+}
+
 func NewClient(cnf config_utils.RedisConfig, prefix string) (*RedisCacheProvider, error) {
 	var client *redis.Client
 
