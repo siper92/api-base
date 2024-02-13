@@ -2,14 +2,9 @@ package api_entity
 
 import (
 	"fmt"
-	"github.com/siper92/api-base"
 	"github.com/siper92/core-utils/type_utils"
 	"gorm.io/gorm"
 )
-
-type GormFilter interface {
-	api_base.CollectionFilter[*gorm.DB]
-}
 
 var _ GormFilter = (WhereFilter)(nil)
 
@@ -80,16 +75,22 @@ func (p PageFilter) ApplyTo(c *gorm.DB) (*gorm.DB, error) {
 
 type FilterType string
 
-const (
-	EQ FilterType = "eq"
-	NE FilterType = "ne"
-	GE FilterType = "ge"
-	GT FilterType = "gt"
-	LE FilterType = "le"
-	LT FilterType = "lt"
-)
+func (f FilterType) ToCondition() string {
+	return string(f)
+}
 
-var AllFilterTypes = []FilterType{EQ, GE, GT, LE, LT, NE}
+const (
+	EQ      FilterType = "="
+	NE      FilterType = "!="
+	GE      FilterType = ">="
+	GT      FilterType = ">"
+	LE      FilterType = "<="
+	LT      FilterType = "<"
+	LIKE    FilterType = "LIKE"
+	IN      FilterType = "IN"
+	NOTIN   FilterType = "NOT IN"
+	BETWEEN FilterType = "BETWEEN"
+)
 
 var _ GormFilter = (*FilterField)(nil)
 
@@ -100,13 +101,17 @@ type FilterField struct {
 }
 
 func (f FilterField) Condition() string {
-	for _, val := range AllFilterTypes {
-		if val == f.Type {
-			return fmt.Sprintf("%s %s ?", f.Field, f.Type)
-		}
+	if f.Value == nil {
+		return ""
 	}
 
-	panic(fmt.Sprintf("unsuported condition type: %s", f.Type))
+	if f.Type == IN || f.Type == NOTIN {
+		return fmt.Sprintf("%s %s (?)", f.Field, f.Type)
+	} else if f.Type == LIKE {
+		return fmt.Sprintf("%s %s ?", f.Field, f.Type)
+	}
+
+	return fmt.Sprintf("%s %s ? AND ?", f.Field, f.Type)
 }
 
 func (f FilterField) Values() []any {
