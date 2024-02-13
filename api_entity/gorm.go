@@ -1,12 +1,14 @@
-package api_base
+package api_entity
 
 import (
 	"fmt"
+	"github.com/siper92/api-base"
+	"github.com/siper92/core-utils/type_utils"
 	"gorm.io/gorm"
 )
 
 type GormFilter interface {
-	CollectionFilter[*gorm.DB]
+	api_base.CollectionFilter[*gorm.DB]
 }
 
 var _ GormFilter = (WhereFilter)(nil)
@@ -41,7 +43,12 @@ func (w WhereFilter) Condition() string {
 }
 
 func (w WhereFilter) ApplyTo(c *gorm.DB) (*gorm.DB, error) {
-	return c.Where(w.Condition(), w.Values()...), nil
+	values := w.Values()
+	if len(values) < 1 {
+		return c.Where(w.Condition()), nil
+	}
+
+	return c.Where(w.Condition(), values...), nil
 }
 
 var _ GormFilter = (*PageFilter)(nil)
@@ -69,4 +76,48 @@ func (p PageFilter) Values() []any {
 
 func (p PageFilter) ApplyTo(c *gorm.DB) (*gorm.DB, error) {
 	return c.Limit(p.Limit).Offset(p.Page * p.Limit), nil
+}
+
+type FilterType string
+
+const (
+	EQ FilterType = "eq"
+	NE FilterType = "ne"
+	GE FilterType = "ge"
+	GT FilterType = "gt"
+	LE FilterType = "le"
+	LT FilterType = "lt"
+)
+
+var AllFilterTypes = []FilterType{EQ, GE, GT, LE, LT, NE}
+
+var _ GormFilter = (*FilterField)(nil)
+
+type FilterField struct {
+	Field string
+	Type  FilterType
+	Value any
+}
+
+func (f FilterField) Condition() string {
+	for _, val := range AllFilterTypes {
+		if val == f.Type {
+			return fmt.Sprintf("%s %s ?", f.Field, f.Type)
+		}
+	}
+
+	panic(fmt.Sprintf("unsuported condition type: %s", f.Type))
+}
+
+func (f FilterField) Values() []any {
+	val := type_utils.BaseTypeToString(f.Value)
+	if val == "" {
+		return nil
+	}
+
+	return []any{val}
+}
+
+func (f FilterField) ApplyTo(c *gorm.DB) (*gorm.DB, error) {
+	return WhereFilter{f.Condition(), f.Values()}.ApplyTo(c)
 }

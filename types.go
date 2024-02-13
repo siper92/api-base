@@ -1,5 +1,7 @@
 package api_base
 
+import "github.com/siper92/api-base/api_entity"
+
 type ToModelEntity[T interface{}] interface {
 	ToModel() T
 }
@@ -18,7 +20,7 @@ type EntityRepository[T RepoEntity] interface {
 	Create(T) (T, error)
 	Update(T) (bool, error)
 	Delete(T) (bool, error)
-	ApplyFilters(filters ...CollectionFilter[GormFilter]) ([]T, error)
+	ApplyFilters(filters ...CollectionFilter[api_entity.GormFilter]) ([]T, error)
 }
 
 type EmptyRepository[T RepoEntity] struct {
@@ -61,7 +63,7 @@ func (u *EmptyRepository[T]) GetByField(field string, value interface{}) (result
 	return result, nil
 }
 
-func (u *EmptyRepository[T]) ApplyFilters(filters ...CollectionFilter[GormFilter]) (result []T, err error) {
+func (u *EmptyRepository[T]) ApplyFilters(filters ...CollectionFilter[api_entity.GormFilter]) (result []T, err error) {
 	for _, filter := range filters {
 		_, _ = filter.ApplyTo(nil)
 	}
