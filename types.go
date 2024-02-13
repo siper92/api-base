@@ -18,6 +18,7 @@ type EntityRepository[T RepoEntity] interface {
 	Create(T) (T, error)
 	Update(T) (bool, error)
 	Delete(T) (bool, error)
+	ApplyFilters(filters ...CollectionFilter[GormFilter]) ([]T, error)
 }
 
 type EmptyRepository[T RepoEntity] struct {
@@ -58,4 +59,17 @@ func (u *EmptyRepository[T]) Delete(t T) (bool, error) {
 
 func (u *EmptyRepository[T]) GetByField(field string, value interface{}) (result []T, err error) {
 	return result, nil
+}
+
+func (u *EmptyRepository[T]) ApplyFilters(filters ...CollectionFilter[GormFilter]) (result []T, err error) {
+	for _, filter := range filters {
+		_, _ = filter.ApplyTo(nil)
+	}
+	return result, err
+}
+
+type CollectionFilter[T any] interface {
+	Condition() string
+	Values() []any
+	ApplyTo(c T) (T, error)
 }
