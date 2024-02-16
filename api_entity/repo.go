@@ -5,6 +5,14 @@ import (
 	"gorm.io/gorm/schema"
 )
 
+type NotFilterableError struct {
+	Field string
+}
+
+func (e NotFilterableError) Error() string {
+	return "field is not filterable: " + e.Field
+}
+
 type ConvertToModel[T any] interface {
 	ToModel() T
 }
@@ -29,7 +37,7 @@ type GormRepository[T RepositoryItem] interface {
 	GetByID(id int64) (T, error)
 	GetByIDs(ids ...int64) ([]T, error)
 	GetResults(filters ...GormFilter) ([]T, error)
-	ApplyFilters(filters ...GormFilter) *gorm.DB
+	ApplyFilters(filters ...GormFilter) (*gorm.DB, error)
 	Count(filters ...GormFilter) (int64, error)
 
 	Create(T) (T, error)
