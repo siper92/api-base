@@ -1,34 +1,38 @@
 package api_entity
 
-import "gorm.io/gorm"
+import (
+	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
+)
 
-type ToModelEntity[T any] interface {
+type ConvertToModel[T any] interface {
 	ToModel() T
 }
 
-type RepoEntity interface {
+type RepositoryItem interface {
+	schema.Tabler
 	GetID() int64
-	TableName() string
 	IsFilterable(field string) bool
 }
 
-type CollectionFilter[T any] interface {
-	Condition() string
-	Values() []any
-	ApplyTo(c T) (T, error)
-}
-
 type GormFilter interface {
-	CollectionFilter[*gorm.DB]
+	Condition() string
+	Values() []interface{}
+	ApplyTo(c *gorm.DB) (*gorm.DB, error)
 }
 
-type EntityRepository[T RepoEntity] interface {
+type GormRepository[T RepositoryItem] interface {
+	Conn() *gorm.DB
 	New() T
 	NewSlice() []T
+
 	GetByID(id int64) (T, error)
+	GetByIDs(ids ...int64) ([]T, error)
+	GetResults(filters ...GormFilter) ([]T, error)
+	ApplyFilters(filters ...GormFilter) (*gorm.DB, error)
+	Count(filters ...GormFilter) (int64, error)
+
 	Create(T) (T, error)
 	Update(T) (bool, error)
 	Delete(T) (bool, error)
-	Select() *gorm.DB
-	ApplyFilters(filters ...GormFilter) ([]T, error)
 }

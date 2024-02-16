@@ -3,9 +3,12 @@ package cache
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/redis/go-redis/v9"
 	"github.com/siper92/core-utils/config_utils"
+	"github.com/siper92/core-utils/type_utils"
+	"reflect"
 	"time"
 )
 
@@ -93,6 +96,13 @@ func (r *RedisCacheProvider) Exists(key string) (bool, error) {
 	return false, nil
 }
 
+func (r *RedisCacheProvider) IsHSET(key string) bool {
+	res := r.client.Type(r.ctx, r.toKey(key)).Val()
+
+	return res == "hash"
+
+}
+
 func (r *RedisCacheProvider) Get(key string) (string, error) {
 	return r.Client().Get(r.ctx, r.toKey(key)).Result()
 }
@@ -132,7 +142,7 @@ func (r *RedisCacheProvider) UpdateTTl(key string, ttl time.Duration) (bool, err
 	return r.Client().Expire(r.ctx, r.toKey(key), ttl).Result()
 }
 
-func (r *RedisCacheProvider) SaveJSON(key string, val any, ttl time.Duration) error {
+func (r *RedisCacheProvider) SaveAsJSON(key string, val any, ttl time.Duration) error {
 	valJson, err := json.Marshal(val)
 	if err != nil {
 		return err
@@ -141,8 +151,46 @@ func (r *RedisCacheProvider) SaveJSON(key string, val any, ttl time.Duration) er
 	return r.Save(r.toKey(key), valJson, ttl)
 }
 
+func (r *RedisCacheProvider) LoadJSON(key string, result any) (any, error) {
+	if reflect.TypeOf(result).Kind() != reflect.Ptr {
+		return nil, errors.New("result argument must be a pointer")
+	}
+
+	val, err := r.Get(key)
+	if err != nil {
+		return nil, err
+	}
+
+	err = json.Unmarshal([]byte(val), result)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 func (r *RedisCacheProvider) GetMap(key string) (map[string]string, error) {
 	return r.Client().HGetAll(r.ctx, r.toKey(key)).Result()
+}
+
+func (r *RedisCacheProvider) GetMapKeys(key string, fields ...string) (map[string]string, error) {
+	var resultMap map[string]string
+	res := r.Client().HMGet(r.ctx, r.toKey(key), fields...)
+	if res.Err() != nil {
+		return resultMap, res.Err()
+	}
+
+	for i, v := range res.Val() {
+		if v != nil {
+			if _, ok := v.(string); !ok {
+				resultMap[fields[i]] = v.(string)
+			} else {
+				resultMap[fields[i]] = type_utils.BaseTypeToString(v)
+			}
+		}
+	}
+
+	return resultMap, nil
 }
 
 func (r *RedisCacheProvider) SetMapValue(key string, field string, value string) (bool, error) {
