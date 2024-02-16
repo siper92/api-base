@@ -29,7 +29,7 @@ type GormRepository[T RepositoryItem] interface {
 	GetByID(id int64) (T, error)
 	GetByIDs(ids ...int64) ([]T, error)
 	GetResults(filters ...GormFilter) ([]T, error)
-	ApplyFilters(filters ...GormFilter) (*gorm.DB, error)
+	ApplyFilters(filters ...GormFilter) *gorm.DB
 	Count(filters ...GormFilter) (int64, error)
 
 	Create(T) (T, error)
