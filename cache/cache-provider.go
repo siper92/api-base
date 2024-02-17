@@ -21,6 +21,14 @@ type CacheableObject interface {
 	SetCacheObject(cacheData map[string]string) error
 }
 
+type KeyNotFound struct {
+	Key string
+}
+
+func (e KeyNotFound) Error() string {
+	return "cache key not found: " + e.Key
+}
+
 type CacheProvider interface {
 	Exists(key string) (bool, error)
 	MustExists(key string) bool
@@ -47,6 +55,7 @@ type CacheProvider interface {
 	GetSet(key string) ([]string, error)
 	AddSetMember(key string, members ...string) (bool, error)
 	RemoveSetMember(key string, members ...string) (bool, error)
+	InSet(key string, member string) (bool, error)
 
 	SetPrefix(prefix string)
 	GetPrefix() string

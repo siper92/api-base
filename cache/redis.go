@@ -256,6 +256,10 @@ func (r *RedisCacheProvider) RemoveSetMember(key string, members ...string) (boo
 	return res > 0, nil
 }
 
+func (r *RedisCacheProvider) InSet(key string, member string) (bool, error) {
+	return r.Client().SIsMember(r.ctx, r.toKey(key), member).Result()
+}
+
 func (r *RedisCacheProvider) SetPrefix(prefix string) {
 	r.prefix = prefix
 }
@@ -270,8 +274,8 @@ func (r *RedisCacheProvider) LoadObj(obj CacheableObject) error {
 	}
 
 	key := obj.CacheKey()
-	if !r.MustExists(key) {
-		return fmt.Errorf("cache key %s not found", key)
+	if r.MustExists(key) == false {
+		return KeyNotFound{Key: key}
 	}
 
 	cacheData, err := r.GetMap(key)
@@ -312,4 +316,29 @@ func LoadObjectList[T CacheableObject](r *RedisCacheProvider, cacheKey string) (
 	}
 
 	return items, nil
+}
+
+func SaveObjectList[T CacheableObject](r *RedisCacheProvider, cacheKey string, items []T, ttl time.Duration) error {
+	var keys []string
+	for _, item := range items {
+		err := r.Save(item.CacheKey(), item, ttl)
+		if err != nil {
+			return err
+		}
+
+		keys = append(keys, item.CacheKey())
+	}
+
+	_ = r.Delete(cacheKey)
+	_, err := r.AddSetMember(cacheKey, keys...)
+	if err != nil {
+		return err
+	}
+
+	_, err = r.UpdateTTl(cacheKey, ttl)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
