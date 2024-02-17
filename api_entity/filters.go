@@ -2,6 +2,7 @@ package api_entity
 
 import (
 	"fmt"
+	core_utils "github.com/siper92/core-utils"
 	"github.com/siper92/core-utils/type_utils"
 	"gorm.io/gorm"
 )
@@ -37,13 +38,13 @@ func (w WhereFilter) Condition() string {
 	return toStringVal(w[0])
 }
 
-func (w WhereFilter) ApplyTo(c *gorm.DB) (*gorm.DB, error) {
+func (w WhereFilter) ApplyTo(c *gorm.DB) *gorm.DB {
 	values := w.Values()
 	if len(values) < 1 {
-		return c.Where(w.Condition()), nil
+		return c.Where(w.Condition())
 	}
 
-	return c.Where(w.Condition(), values...), nil
+	return c.Where(w.Condition(), values...)
 }
 
 var _ GormFilter = (*PageFilter)(nil)
@@ -69,8 +70,8 @@ func (p PageFilter) Values() []any {
 	return []any{p.Limit, p.Page * p.Limit}
 }
 
-func (p PageFilter) ApplyTo(c *gorm.DB) (*gorm.DB, error) {
-	return c.Limit(p.Limit).Offset(p.Page * p.Limit), nil
+func (p PageFilter) ApplyTo(c *gorm.DB) *gorm.DB {
+	return c.Limit(p.Limit).Offset(p.Page * p.Limit)
 }
 
 type FilterType string
@@ -92,6 +93,8 @@ const (
 	BETWEEN FilterType = "BETWEEN"
 )
 
+var allFilterTypes = []FilterType{EQ, NE, GE, GT, LE, LT, LIKE, IN, NOTIN, BETWEEN}
+
 var _ GormFilter = (*FilterField)(nil)
 
 type FilterField struct {
@@ -105,13 +108,20 @@ func (f FilterField) Condition() string {
 		return ""
 	}
 
-	if f.Type == IN || f.Type == NOTIN {
-		return fmt.Sprintf("%s %s (?)", f.Field, f.Type)
-	} else if f.Type == LIKE {
-		return fmt.Sprintf("%s %s ?", f.Field, f.Type)
-	}
+	for _, ft := range allFilterTypes {
+		if ft == f.Type {
+			if f.Type == IN || f.Type == NOTIN {
+				return fmt.Sprintf("%s %s (?)", f.Field, f.Type)
+			} else if f.Type == BETWEEN {
+				return fmt.Sprintf("%s %s ? AND ?", f.Field, f.Type)
+			}
 
-	return fmt.Sprintf("%s %s ? AND ?", f.Field, f.Type)
+			return fmt.Sprintf("%s %s ?", f.Field, f.Type)
+		}
+	} // end for
+
+	core_utils.Debug("invalid filter type: " + string(f.Type))
+	return fmt.Sprintf("%s %s ?", f.Field, EQ)
 }
 
 func (f FilterField) Values() []any {
@@ -123,6 +133,36 @@ func (f FilterField) Values() []any {
 	return []any{val}
 }
 
-func (f FilterField) ApplyTo(c *gorm.DB) (*gorm.DB, error) {
+func (f FilterField) ApplyTo(c *gorm.DB) *gorm.DB {
 	return WhereFilter{f.Condition(), f.Values()}.ApplyTo(c)
+}
+
+func ApplyFilters(c *gorm.DB, filters ...any) (*gorm.DB, error) {
+	var condition string
+	var values []any
+
+	for _, f := range filters {
+		switch fType := f.(type) {
+		case GormFilter:
+			c = fType.ApplyTo(c)
+		case string:
+			if condition == "" {
+				condition = fType
+			} else {
+				values = append(values, fType)
+			}
+		default:
+			if condition == "" {
+				return c, fmt.Errorf("invalid filter type: " + fmt.Sprintf("%T", f))
+			} else {
+				values = append(values, f)
+			}
+		}
+	}
+
+	if condition != "" {
+		return c.Where(condition, values...), nil
+	}
+
+	return nil, fmt.Errorf("no filters provided or unknow types")
 }

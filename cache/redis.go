@@ -285,3 +285,31 @@ func (r *RedisCacheProvider) LoadObj(obj CacheableObject) error {
 func (r *RedisCacheProvider) SaveObj(obj CacheableObject) error {
 	return r.Save(obj.CacheKey(), obj, obj.CacheTTL())
 }
+
+func LoadObjectList[T CacheableObject](r *RedisCacheProvider, cacheKey string) ([]T, error) {
+	var items []T
+	if r.MustExists(cacheKey) {
+		itemKeys, err := r.GetSet(cacheKey)
+		if err == nil {
+			return []T{}, err
+		}
+
+		for _, key := range itemKeys {
+			if r.MustExists(key) == false {
+				_, _ = r.RemoveSetMember(cacheKey, key)
+				continue
+			}
+
+			var item T
+			item.SetCacheKey(key)
+			err = r.LoadObj(item)
+			if err != nil {
+				return []T{}, err
+			} else if item.IsCacheLoaded() {
+				items = append(items, item)
+			}
+		}
+	}
+
+	return items, nil
+}

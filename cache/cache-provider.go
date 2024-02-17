@@ -15,6 +15,8 @@ type IDCacheable interface {
 
 type CacheableObject interface {
 	Cacheable
+	SetCacheKey(key string)
+	IsCacheLoaded() bool
 	GetCacheObject() map[string]string
 	SetCacheObject(cacheData map[string]string) error
 }

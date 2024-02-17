@@ -26,7 +26,7 @@ type RepositoryItem interface {
 type GormFilter interface {
 	Condition() string
 	Values() []interface{}
-	ApplyTo(c *gorm.DB) (*gorm.DB, error)
+	ApplyTo(c *gorm.DB) *gorm.DB
 }
 
 type GormRepository[T RepositoryItem] interface {
@@ -36,9 +36,10 @@ type GormRepository[T RepositoryItem] interface {
 
 	GetByID(id int64) (T, error)
 	GetByIDs(ids ...int64) ([]T, error)
-	GetResults(filters ...GormFilter) ([]T, error)
-	ApplyFilters(filters ...GormFilter) (*gorm.DB, error)
-	Count(filters ...GormFilter) (int64, error)
+	GetOne(filters ...any) (T, error)
+	GetResults(filters ...any) ([]T, error)
+	ApplyFilters(filters ...any) *gorm.DB
+	Count(filters ...any) (int64, error)
 
 	Create(T) (T, error)
 	Update(T) (bool, error)
