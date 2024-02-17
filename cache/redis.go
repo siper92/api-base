@@ -96,6 +96,11 @@ func (r *RedisCacheProvider) Exists(key string) (bool, error) {
 	return false, nil
 }
 
+func (r *RedisCacheProvider) MustExists(key string) bool {
+	ok, _ := r.Exists(key)
+	return ok
+}
+
 func (r *RedisCacheProvider) IsHSET(key string) bool {
 	res := r.client.Type(r.ctx, r.toKey(key)).Val()
 
@@ -213,8 +218,12 @@ func (r *RedisCacheProvider) GetSet(key string) ([]string, error) {
 	return r.Client().SMembers(r.ctx, r.toKey(key)).Result()
 }
 
-func (r *RedisCacheProvider) AddSetMember(key string, member string) (bool, error) {
-	res, err := r.Client().SAdd(r.ctx, r.toKey(key), member).Result()
+func (r *RedisCacheProvider) AddSetMember(key string, members ...string) (bool, error) {
+	membersInterfaces := make([]interface{}, len(members))
+	for i, member := range members {
+		membersInterfaces[i] = member
+	}
+	res, err := r.Client().SAdd(r.ctx, r.toKey(key), membersInterfaces...).Result()
 	if err != nil {
 		return false, err
 	}
@@ -222,8 +231,12 @@ func (r *RedisCacheProvider) AddSetMember(key string, member string) (bool, erro
 	return res > 0, nil
 }
 
-func (r *RedisCacheProvider) RemoveSetMember(key string, member string) (bool, error) {
-	res, err := r.Client().SRem(r.ctx, r.toKey(key), member).Result()
+func (r *RedisCacheProvider) RemoveSetMember(key string, members ...string) (bool, error) {
+	membersInterfaces := make([]interface{}, len(members))
+	for i, member := range members {
+		membersInterfaces[i] = member
+	}
+	res, err := r.Client().SRem(r.ctx, r.toKey(key), membersInterfaces...).Result()
 	if err != nil {
 		return false, err
 	}
@@ -237,4 +250,26 @@ func (r *RedisCacheProvider) SetPrefix(prefix string) {
 
 func (r *RedisCacheProvider) GetPrefix() string {
 	return r.prefix
+}
+
+func (r *RedisCacheProvider) LoadObj(obj CacheableObject) error {
+	if reflect.ValueOf(obj).Kind() != reflect.Ptr {
+		return fmt.Errorf("object %T must be a pointer", obj)
+	}
+
+	key := obj.CacheKey()
+	if !r.MustExists(key) {
+		return fmt.Errorf("cache key %s not found", key)
+	}
+
+	cacheData, err := r.GetMap(key)
+	if err != nil {
+		return err
+	}
+
+	return obj.SetCacheObject(cacheData)
+}
+
+func (r *RedisCacheProvider) SaveObj(obj CacheableObject) error {
+	return r.Save(obj.CacheKey(), obj.GetCacheObject(), obj.CacheTTL())
 }

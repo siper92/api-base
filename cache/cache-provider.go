@@ -6,6 +6,7 @@ import (
 
 type Cacheable interface {
 	CacheKey() string
+	CacheTTL() time.Duration
 }
 
 type IDCacheable interface {
@@ -20,7 +21,9 @@ type CacheableObject interface {
 
 type CacheProvider interface {
 	Exists(key string) (bool, error)
+	MustExists(key string) bool
 	IsHSET(key string) bool
+
 	Get(key string) (string, error)
 	Save(key string, val any, ttl time.Duration) error
 	Delete(key string) error
@@ -30,6 +33,9 @@ type CacheProvider interface {
 	SaveAsJSON(key string, val any, ttl time.Duration) error
 	LoadJSON(key string, result any) (any, error)
 
+	SaveObj(o CacheableObject) error
+	LoadObj(o CacheableObject) error
+
 	GetMap(key string) (map[string]string, error)
 	GetMapKeys(key string, fields ...string) (map[string]string, error)
 	GetMapValue(key string, field string) (string, error)
@@ -37,8 +43,8 @@ type CacheProvider interface {
 	SetMapValue(key string, field string, value string) (bool, error)
 
 	GetSet(key string) ([]string, error)
-	AddSetMember(key string, member string) (bool, error)
-	RemoveSetMember(key string, member string) (bool, error)
+	AddSetMember(key string, members ...string) (bool, error)
+	RemoveSetMember(key string, members ...string) (bool, error)
 
 	SetPrefix(prefix string)
 	GetPrefix() string
