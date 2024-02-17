@@ -113,13 +113,10 @@ func (r *RedisCacheProvider) Get(key string) (string, error) {
 }
 
 func (r *RedisCacheProvider) Save(key string, val any, ttl time.Duration) error {
-	saveVal := "no data"
-	switch valT := val.(type) {
-	case CacheableObject:
-		cacheData := valT.GetCacheObject()
-		res := r.Client().HSet(r.ctx, r.toKey(key), cacheData, ttl)
+	// check if val is a map
+	var saveVal any
 
-		return res.Err()
+	switch valT := val.(type) {
 	case string:
 		saveVal = valT
 	case []byte:
@@ -129,7 +126,22 @@ func (r *RedisCacheProvider) Save(key string, val any, ttl time.Duration) error 
 	case float32, float64:
 		saveVal = fmt.Sprintf("%f", val)
 	default:
-		saveVal = fmt.Sprintf("%v", val)
+		if reflect.TypeOf(saveVal).Kind() == reflect.Map {
+			res := r.Client().HMSet(r.ctx, r.toKey(key), val, ttl)
+
+			return res.Err()
+		} else if reflect.TypeOf(saveVal).Kind() == reflect.Slice {
+			res, err := r.Client().SAdd(r.ctx, r.toKey(key), saveVal.([]any)...).Result()
+			if err != nil {
+				return err
+			}
+
+			if res == 0 && len(saveVal.([]any)) > 0 {
+				return errors.New("failed to save set")
+			}
+		} else {
+			return fmt.Errorf("unsupported type %T", val)
+		}
 	}
 
 	return r.Client().Set(r.ctx, r.toKey(key), saveVal, ttl).Err()
@@ -271,5 +283,5 @@ func (r *RedisCacheProvider) LoadObj(obj CacheableObject) error {
 }
 
 func (r *RedisCacheProvider) SaveObj(obj CacheableObject) error {
-	return r.Save(obj.CacheKey(), obj.GetCacheObject(), obj.CacheTTL())
+	return r.Save(obj.CacheKey(), obj, obj.CacheTTL())
 }
