@@ -8,18 +8,6 @@ import (
 	"gorm.io/gorm"
 )
 
-var _ api_entity.GormFilter = (Where)(nil)
-
-type Where []any
-
-func (w Where) Values() []any {
-	if len(w) > 1 {
-		return w[1:]
-	}
-
-	return nil
-}
-
 func toStringVal(w any) string {
 	switch val := w.(type) {
 	case string:
@@ -29,23 +17,6 @@ func toStringVal(w any) string {
 	default:
 		panic("invalid where filter value type: " + fmt.Sprintf("%T", val) + " " + fmt.Sprintf("%v", w))
 	}
-}
-
-func (w Where) Condition() string {
-	if len(w) == 0 {
-		panic("empty where filter")
-	}
-
-	return toStringVal(w[0])
-}
-
-func (w Where) ApplyTo(c *gorm.DB) *gorm.DB {
-	values := w.Values()
-	if len(values) < 1 {
-		return c.Where(w.Condition())
-	}
-
-	return c.Where(w.Condition(), values...)
 }
 
 var _ api_entity.GormFilter = (*Pager)(nil)
@@ -88,6 +59,7 @@ const (
 	IN      FilterType = "IN"
 	NOTIN   FilterType = "NOT IN"
 	BETWEEN FilterType = "BETWEEN"
+	NOTNULL FilterType = "IS NOT NULL"
 )
 
 var allFilterTypes = map[FilterType]bool{
@@ -101,6 +73,7 @@ var allFilterTypes = map[FilterType]bool{
 	IN:      true,
 	NOTIN:   true,
 	BETWEEN: true,
+	NOTNULL: true,
 }
 
 var _ api_entity.GormFilter = (*Field)(nil)
@@ -140,5 +113,22 @@ func (f Field) Values() []any {
 }
 
 func (f Field) ApplyTo(c *gorm.DB) *gorm.DB {
-	return Where{f.Condition(), f.Values()}.ApplyTo(c)
+	return Raw{Cmd: f.Condition(), Value: f.Values()}.ApplyTo(c)
+}
+
+type Raw struct {
+	Cmd   string
+	Value []any
+}
+
+func (r Raw) Condition() string {
+	return r.Cmd
+}
+
+func (r Raw) Values() []interface{} {
+	return r.Value
+}
+
+func (r Raw) ApplyTo(c *gorm.DB) *gorm.DB {
+	return c.Where(r.Condition(), r.Values()...)
 }
