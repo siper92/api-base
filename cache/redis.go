@@ -85,7 +85,7 @@ func (r *RedisCacheProvider) Test() error {
 		return fmt.Errorf("redis ping failed: %s", err)
 	}
 
-	return fmt.Errorf("implement me")
+	return nil
 }
 
 func (r *RedisCacheProvider) Exists(key string) (bool, error) {
