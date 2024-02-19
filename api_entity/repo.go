@@ -37,7 +37,7 @@ type GormRepository[T RepositoryItem] interface {
 	NewSlice() []T
 
 	Conn() *gorm.DB
-	Select() *gorm.DB // table name added to select
+	Select(query interface{}, args ...interface{}) *gorm.DB // table name added to select
 
 	GetByID(id int64) (T, error)
 	GetByIDs(ids ...int64) ([]T, error)
