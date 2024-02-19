@@ -113,22 +113,36 @@ func (f Field) Values() []any {
 }
 
 func (f Field) ApplyTo(c *gorm.DB) *gorm.DB {
-	return Raw{Cmd: f.Condition(), Value: f.Values()}.ApplyTo(c)
+	return Where{Cmd: f.Condition(), Value: f.Values()}.ApplyTo(c)
 }
 
-type Raw struct {
+type Where struct {
 	Cmd   string
 	Value []any
 }
 
+func (w Where) Condition() string {
+	return w.Cmd
+}
+
+func (w Where) Values() []interface{} {
+	return w.Value
+}
+
+func (w Where) ApplyTo(c *gorm.DB) *gorm.DB {
+	return c.Where(w.Condition(), w.Values()...)
+}
+
+type Raw string
+
 func (r Raw) Condition() string {
-	return r.Cmd
+	return string(r)
 }
 
 func (r Raw) Values() []interface{} {
-	return r.Value
+	return nil
 }
 
 func (r Raw) ApplyTo(c *gorm.DB) *gorm.DB {
-	return c.Where(r.Condition(), r.Values()...)
+	return Where{Cmd: r.Condition(), Value: r.Values()}.ApplyTo(c)
 }
