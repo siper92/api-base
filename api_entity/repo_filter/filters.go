@@ -6,6 +6,7 @@ import (
 	core_utils "github.com/siper92/core-utils"
 	"github.com/siper92/core-utils/type_utils"
 	"gorm.io/gorm"
+	"strings"
 )
 
 func toStringVal(w any) string {
@@ -152,35 +153,70 @@ func PrepareFilters(filters ...interface{}) []api_entity.GormFilter {
 	var lastCondition api_entity.GormFilter
 
 	for _, filter := range filters {
-		switch f := filter.(type) {
+		switch filterPart := filter.(type) {
 		case api_entity.GormFilter:
 			if lastCondition != nil {
 				preparedFilters = append(preparedFilters, lastCondition)
 			}
-			lastCondition = f
+			lastCondition = filterPart
 		case string:
 			if lastCondition != nil {
 				preparedFilters = append(preparedFilters, lastCondition)
 			}
 
 			lastCondition = Where{
-				Cmd: f,
+				Cmd: filterPart,
 			}
 		default:
 			switch t := lastCondition.(type) {
 			case Field:
-				t.Value = f
-				lastCondition = t
+				values := t.Values()
+				valuesCount := strings.Count(t.Condition(), "?")
+				if canAddValueToFilter(t) == false {
+					panic(fmt.Sprintf("InvalidArgsNum: '%s': %d != %d", lastCondition.Condition(), valuesCount, len(values)))
+				}
+
+				lastCondition = Field{
+					Field: t.Field,
+					Type:  t.Type,
+					Value: append(values, filterPart),
+				}
 			case Where:
-				t.Value = append(t.Value, f)
-				lastCondition = t
+				values := t.Values()
+				valuesCount := strings.Count(t.Condition(), "?")
+				if canAddValueToFilter(t) == false {
+					getErrorMessage(t.Condition(), valuesCount, len(values))
+				}
+
+				lastCondition = Where{
+					Cmd:   t.Cmd,
+					Value: append(values, filterPart),
+				}
 			default:
 				panic(fmt.Sprintf("unsupported filter type %T", filter))
 			}
 		}
 	}
 
-	preparedFilters = append(preparedFilters, lastCondition)
+	if lastCondition != nil {
+		valuesCount := strings.Count(lastCondition.Condition(), "?")
+		actualValuesCount := len(lastCondition.Values())
+		if valuesCount != actualValuesCount {
+			panic(getErrorMessage(lastCondition.Condition(), valuesCount, actualValuesCount))
+		}
+
+		preparedFilters = append(preparedFilters, lastCondition)
+	}
 
 	return preparedFilters
+}
+
+func canAddValueToFilter(filter api_entity.GormFilter) bool {
+	values := filter.Values()
+	valuesCount := strings.Count(filter.Condition(), "?")
+	return valuesCount >= len(values)+1
+}
+
+func getErrorMessage(cond string, expectedValCount int, actualValCount int) string {
+	return fmt.Sprintf("InvalidArgsNum: '%s': expected %d got %d", cond, expectedValCount, actualValCount)
 }
