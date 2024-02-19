@@ -146,3 +146,41 @@ func (r Raw) Values() []interface{} {
 func (r Raw) ApplyTo(c *gorm.DB) *gorm.DB {
 	return Where{Cmd: r.Condition(), Value: r.Values()}.ApplyTo(c)
 }
+
+func PrepareFilters(filters ...interface{}) []api_entity.GormFilter {
+	preparedFilters := make([]api_entity.GormFilter, 0)
+	var lastCondition api_entity.GormFilter
+
+	for _, filter := range filters {
+		switch f := filter.(type) {
+		case api_entity.GormFilter:
+			if lastCondition != nil {
+				preparedFilters = append(preparedFilters, lastCondition)
+			}
+			lastCondition = f
+		case string:
+			if lastCondition != nil {
+				preparedFilters = append(preparedFilters, lastCondition)
+			}
+
+			lastCondition = Where{
+				Cmd: f,
+			}
+		default:
+			switch t := lastCondition.(type) {
+			case Field:
+				t.Value = f
+				lastCondition = t
+			case Where:
+				t.Value = append(t.Value, f)
+				lastCondition = t
+			default:
+				panic(fmt.Sprintf("unsupported filter type %T", filter))
+			}
+		}
+	}
+
+	preparedFilters = append(preparedFilters, lastCondition)
+
+	return preparedFilters
+}

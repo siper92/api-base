@@ -20,6 +20,9 @@ type ConvertToModel[T any] interface {
 type RepositoryItem interface {
 	schema.Tabler
 	GetID() int64
+}
+
+type RepositoryEntity interface {
 	IsFilterable(field string) bool
 }
 
@@ -36,10 +39,10 @@ type GormRepository[T RepositoryItem] interface {
 
 	GetByID(id int64) (T, error)
 	GetByIDs(ids ...int64) ([]T, error)
-	ApplyFilters(filters ...GormFilter) *gorm.DB
-	GetOne(filters ...GormFilter) (T, error)
-	GetResults(filters ...GormFilter) ([]T, error)
-	Count(filters ...GormFilter) (int64, error)
+	ApplyFilters(filters ...interface{}) *gorm.DB
+	GetOne(filters ...interface{}) (T, error)
+	GetResults(filters ...interface{}) ([]T, error)
+	Count(filters ...interface{}) (int64, error)
 
 	Create(T) (T, error)
 	Update(T) (bool, error)
