@@ -112,6 +112,20 @@ func (r *RedisCacheProvider) Get(key string) (string, error) {
 	return r.Client().Get(r.ctx, r.toKey(key)).Result()
 }
 
+func (r *RedisCacheProvider) saveMap(key string, val interface{}, ttl time.Duration) error {
+	err := r.Client().HMSet(r.ctx, r.toKey(key), val).Err()
+	if err != nil {
+		return err
+	}
+
+	_, err = r.UpdateTTl(key, ttl)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (r *RedisCacheProvider) Save(key string, val any, ttl time.Duration) error {
 	// check if val is a map
 	switch valT := val.(type) {
@@ -124,15 +138,10 @@ func (r *RedisCacheProvider) Save(key string, val any, ttl time.Duration) error 
 	case float32, float64:
 		val = fmt.Sprintf("%f", val)
 	case CacheableObject:
-		val = valT.GetCacheObject()
-		res := r.Client().HSet(r.ctx, r.toKey(key), val, ttl)
-
-		return res.Err()
+		return r.saveMap(key, valT.GetCacheObject(), ttl)
 	default:
 		if reflect.TypeOf(val).Kind() == reflect.Map {
-			res := r.Client().HSet(r.ctx, r.toKey(key), val, ttl)
-
-			return res.Err()
+			return r.saveMap(key, val, ttl)
 		} else if reflect.TypeOf(val).Kind() == reflect.Slice {
 			res, err := r.Client().SAdd(r.ctx, r.toKey(key), val.([]any)...).Result()
 			if err != nil {
