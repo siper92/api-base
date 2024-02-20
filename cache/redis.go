@@ -123,6 +123,11 @@ func (r *RedisCacheProvider) Save(key string, val any, ttl time.Duration) error 
 		val = fmt.Sprintf("%d", val)
 	case float32, float64:
 		val = fmt.Sprintf("%f", val)
+	case CacheableObject:
+		val = valT.GetCacheObject()
+		res := r.Client().HMSet(r.ctx, r.toKey(key), val, ttl)
+
+		return res.Err()
 	default:
 		if reflect.TypeOf(val).Kind() == reflect.Map {
 			res := r.Client().HMSet(r.ctx, r.toKey(key), val, ttl)
