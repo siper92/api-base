@@ -114,29 +114,27 @@ func (r *RedisCacheProvider) Get(key string) (string, error) {
 
 func (r *RedisCacheProvider) Save(key string, val any, ttl time.Duration) error {
 	// check if val is a map
-	var saveVal any
-
 	switch valT := val.(type) {
 	case string:
-		saveVal = valT
+		val = valT
 	case []byte:
-		saveVal = string(valT)
+		val = string(valT)
 	case int, int32, int64, uint, uint32, uint64:
-		saveVal = fmt.Sprintf("%d", val)
+		val = fmt.Sprintf("%d", val)
 	case float32, float64:
-		saveVal = fmt.Sprintf("%f", val)
+		val = fmt.Sprintf("%f", val)
 	default:
-		if reflect.TypeOf(saveVal).Kind() == reflect.Map {
+		if reflect.TypeOf(val).Kind() == reflect.Map {
 			res := r.Client().HMSet(r.ctx, r.toKey(key), val, ttl)
 
 			return res.Err()
-		} else if reflect.TypeOf(saveVal).Kind() == reflect.Slice {
-			res, err := r.Client().SAdd(r.ctx, r.toKey(key), saveVal.([]any)...).Result()
+		} else if reflect.TypeOf(val).Kind() == reflect.Slice {
+			res, err := r.Client().SAdd(r.ctx, r.toKey(key), val.([]any)...).Result()
 			if err != nil {
 				return err
 			}
 
-			if res == 0 && len(saveVal.([]any)) > 0 {
+			if res == 0 && len(val.([]any)) > 0 {
 				return errors.New("failed to save set")
 			}
 		} else {
@@ -144,7 +142,7 @@ func (r *RedisCacheProvider) Save(key string, val any, ttl time.Duration) error 
 		}
 	}
 
-	return r.Client().Set(r.ctx, r.toKey(key), saveVal, ttl).Err()
+	return r.Client().Set(r.ctx, r.toKey(key), val, ttl).Err()
 }
 
 func (r *RedisCacheProvider) Delete(key string) error {
