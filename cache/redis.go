@@ -306,7 +306,7 @@ func LoadObjectList[T CacheableObject](r *RedisCacheProvider, cacheKey string) (
 	var items []T
 	if r.MustExists(cacheKey) {
 		itemKeys, err := r.GetSet(cacheKey)
-		if err == nil {
+		if err != nil {
 			return []T{}, err
 		}
 
