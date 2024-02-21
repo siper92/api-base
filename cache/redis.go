@@ -12,7 +12,8 @@ import (
 	"time"
 )
 
-const InfiniteTTL = time.Duration(0)
+// InfiniteTTL - do th legacy, it needs to a huge positive number
+const InfiniteTTL = 99999 * time.Hour
 
 var _ CacheProvider = (*RedisCacheProvider)(nil)
 
