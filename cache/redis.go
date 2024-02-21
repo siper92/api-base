@@ -203,7 +203,7 @@ func (r *RedisCacheProvider) GetMap(key string) (map[string]string, error) {
 }
 
 func (r *RedisCacheProvider) GetMapKeys(key string, fields ...string) (map[string]string, error) {
-	var resultMap map[string]string
+	resultMap := map[string]string{}
 	res := r.Client().HMGet(r.ctx, r.toKey(key), fields...)
 	if res.Err() != nil {
 		return resultMap, res.Err()
