@@ -6,11 +6,11 @@ import (
 )
 
 func IsValidEmail(email string) bool {
-	return core_utils.SimpleStructValidation(struct {
+	return core_utils.HasFieldError("Email", core_utils.SimpleStructValidation(struct {
 		Email string `validate:"required,email"`
 	}{
 		Email: email,
-	}).HasFieldErrorFor("Email") == false
+	})) == false
 }
 
 func ValidatePassword(fl validator.FieldLevel) bool {

@@ -6,7 +6,7 @@ require (
 	github.com/99designs/gqlgen v0.17.44
 	github.com/go-playground/validator/v10 v10.18.0
 	github.com/redis/go-redis/v9 v9.4.0
-	github.com/siper92/core-utils v1.0.39
+	github.com/siper92/core-utils v1.0.40
 	github.com/vektah/gqlparser/v2 v2.5.11
 	gorm.io/gorm v1.25.7
 )
