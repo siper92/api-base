@@ -47,6 +47,30 @@ func (s StructValidatorResult) SingleError() error {
 	return fmt.Errorf(strings.Join(messages, "\n"))
 }
 
+func ValidateWithCustomFunc(s interface{}, validators map[string]validator.Func) StructValidatorResult {
+	validate := validator.New()
+	for field, fn := range validators {
+		err := validate.RegisterValidation(field, fn)
+		if err != nil {
+			core_utils.ErrorWarning(err)
+		}
+	}
+
+	err := validate.Struct(s)
+
+	if err != nil {
+		if _, ok := err.(*validator.InvalidValidationError); ok {
+			core_utils.ErrorWarning(err)
+		}
+
+		if _errors, ok := err.(validator.ValidationErrors); ok {
+			return StructValidatorResult(_errors)
+		}
+	}
+
+	return nil
+}
+
 func ValidateApiData(s interface{}) error {
 	validate := validator.New()
 
