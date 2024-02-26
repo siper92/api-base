@@ -72,27 +72,9 @@ func ValidateWithCustomFunc(s interface{}, validators map[string]validator.Func)
 }
 
 func ValidateApiData(s interface{}) error {
-	validate := validator.New()
-
-	err := validate.RegisterValidation("password", ValidatePassword)
-	if err != nil {
-		core_utils.ErrorWarning(err)
-		return nil
-	}
-
-	err = validate.Struct(s)
-
-	if err != nil {
-		if _, ok := err.(*validator.InvalidValidationError); ok {
-			return err
-		}
-
-		if _errors, ok := err.(validator.ValidationErrors); ok {
-			return StructValidatorResult(_errors)
-		}
-	}
-
-	return nil
+	return ValidateWithCustomFunc(s, map[string]validator.Func{
+		"password": ValidatePassword,
+	})
 }
 
 func ValidateGenericStruct(s interface{}) StructValidatorResult {
