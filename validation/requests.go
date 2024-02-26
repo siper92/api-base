@@ -1,10 +1,10 @@
-package grapql_api
+package validation
 
 import (
 	"context"
+	"errors"
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/go-playground/validator/v10"
-	"github.com/siper92/api-base/validation"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
@@ -38,16 +38,11 @@ func (e ErrorHandler) AddFieldErrorToResponse(field string, message string) erro
 }
 
 func (e ErrorHandler) AddValidationsErrors(err error) error {
-	switch errors := err.(type) {
-	case validation.StructValidatorResult:
-		for _, fieldErr := range errors {
+	if errors.As(err, &validator.ValidationErrors{}) {
+		for _, fieldErr := range err.(validator.ValidationErrors) {
 			_ = e.AddFieldErrorToResponse(fieldErr.Field(), e.getMessage(fieldErr))
 		}
-	case validator.ValidationErrors:
-		for _, fieldErr := range errors {
-			_ = e.AddFieldErrorToResponse(fieldErr.Field(), e.getMessage(fieldErr))
-		}
-	default:
+	} else {
 		return gqlerror.Errorf("Validation errors: %T:%s", err, err.Error())
 	}
 
