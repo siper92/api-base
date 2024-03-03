@@ -17,13 +17,9 @@ type ConvertToModel[T any] interface {
 	ToModel() T
 }
 
-type RepositoryItem interface {
+type Entity interface {
 	schema.Tabler
 	GetID() int64
-}
-
-type RepositoryEntity interface {
-	IsFilterable(field string) bool
 }
 
 type GormFilter interface {
@@ -32,21 +28,29 @@ type GormFilter interface {
 	ApplyTo(c *gorm.DB) *gorm.DB
 }
 
-type GormRepository[T RepositoryItem] interface {
-	New() T
-	NewSlice() []T
+type HasRepository[T Entity] interface {
+	NewRepository() Repository[T]
+}
 
+type Repository[T Entity] interface {
 	Conn() *gorm.DB
+	New() T
+	Slice() []T
 	Select(query interface{}, args ...interface{}) *gorm.DB // table name added to select
 
-	GetByID(id int64) (T, error)
-	GetByIDs(ids ...int64) ([]T, error)
-	ApplyFilters(filters ...GormFilter) *gorm.DB
+	Filter(filters ...GormFilter) *gorm.DB
 	GetOne(filters ...GormFilter) (T, error)
 	GetResults(filters ...GormFilter) ([]T, error)
-	Count(filters ...GormFilter) (int64, error)
+}
 
+type Creator[T Entity] interface {
 	Create(T) (T, error)
+}
+
+type Updater[T Entity] interface {
 	Update(T) (bool, error)
+}
+
+type Remover[T Entity] interface {
 	Delete(T) (bool, error)
 }

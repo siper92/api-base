@@ -1,4 +1,4 @@
-package repo_filter
+package api_entity
 
 import (
 	"fmt"
