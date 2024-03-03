@@ -22,6 +22,11 @@ type Entity interface {
 	GetID() int64
 }
 
+type Initializable[T Entity] interface {
+	New() T
+	NewSlice() []T
+}
+
 type GormFilter interface {
 	Condition() string
 	Values() []interface{}
@@ -34,8 +39,6 @@ type HasRepository[T Entity] interface {
 
 type Repository[T Entity] interface {
 	Conn() *gorm.DB
-	New() T
-	Slice() []T
 	Select(query interface{}, args ...interface{}) *gorm.DB // table name added to select
 
 	Filter(filters ...GormFilter) *gorm.DB
