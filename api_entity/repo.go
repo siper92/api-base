@@ -42,6 +42,8 @@ type Repository[T Entity] interface {
 	Select(query interface{}, args ...interface{}) *gorm.DB // table name added to select
 
 	Filter(filters ...GormFilter) *gorm.DB
+	GetByID(id int64) (T, error)
+	GetByIDs(ids ...int64) ([]T, error)
 	GetOne(filters ...GormFilter) (T, error)
 	GetResults(filters ...GormFilter) ([]T, error)
 }
