@@ -199,6 +199,10 @@ func (r *RedisCacheProvider) LoadJSON(key string, result any) (any, error) {
 	return result, nil
 }
 
+func (r *RedisCacheProvider) SaveMap(key string, val map[string]string, ttl time.Duration) error {
+	return r.saveMap(key, val, ttl)
+}
+
 func (r *RedisCacheProvider) GetMap(key string) (map[string]string, error) {
 	return r.Client().HGetAll(r.ctx, r.toKey(key)).Result()
 }
@@ -296,10 +300,6 @@ func (r *RedisCacheProvider) GetPrefix() string {
 }
 
 func (r *RedisCacheProvider) LoadObj(obj CacheableObject) error {
-	if reflect.ValueOf(obj).Kind() != reflect.Ptr {
-		return fmt.Errorf("object %T must be a pointer", obj)
-	}
-
 	key := obj.CacheKey()
 	if r.MustExists(key) == false {
 		return KeyNotFound{Key: key}
