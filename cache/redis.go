@@ -243,6 +243,20 @@ func (r *RedisCacheProvider) GetSet(key string) ([]string, error) {
 	return r.Client().SMembers(r.ctx, r.toKey(key)).Result()
 }
 
+func (r *RedisCacheProvider) SaveSet(key string, members []string, ttl time.Duration) error {
+	_, err := r.Client().SAdd(r.ctx, r.toKey(key), members).Result()
+	if err != nil {
+		return err
+	}
+
+	_, err = r.UpdateTTl(key, ttl)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (r *RedisCacheProvider) AddSetMember(key string, members ...string) (bool, error) {
 	membersInterfaces := make([]interface{}, len(members))
 	for i, member := range members {

@@ -16,21 +16,16 @@ func _toRedisMapValue(rawVal any, depth int) string {
 	}
 
 	switch val := rawVal.(type) {
-	case string:
-		return val
-	case *string:
-		return *val
-	case []byte:
-		return string(val)
-	case int, int32, int64, uint, uint32, uint64,
-		*int, *int32, *int64, *uint, *uint32, *uint64:
-		return fmt.Sprintf("%d", val)
-	case float32, float64, *float32, *float64:
-		return fmt.Sprintf("%f", val)
+	case string, *string,
+		[]byte, *[]byte,
+		int32, int64, uint, uint32, uint64,
+		*int, *int32, *int64, *uint, *uint32, *uint64,
+		float32, float64, *float32, *float64,
+		bool, *bool,
+		fmt.Stringer:
+		return core_utils.ToString(val)
 	case CacheableObject:
 		return val.CacheKey()
-	case fmt.Stringer:
-		return val.String()
 	}
 
 	core_utils.Debug("unsupported type: %T", rawVal)

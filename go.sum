@@ -43,8 +43,8 @@ github.com/redis/go-redis/v9 v9.4.0 h1:Yzoz33UZw9I/mFhx4MNrB6Fk+XHO1VukNcCa1+lwy
 github.com/redis/go-redis/v9 v9.4.0/go.mod h1:hdY0cQFCN4fnSYT6TkisLufl/4W5UIXyv0b/CLO2V2M=
 github.com/sergi/go-diff v1.3.1 h1:xkr+Oxo4BOQKmkn/B9eMK0g5Kg/983T9DqqPHwYqD+8=
 github.com/sergi/go-diff v1.3.1/go.mod h1:aMJSSKb2lpPvRNec0+w3fl7LP9IOFzdc9Pa4NFbPK1I=
-github.com/siper92/core-utils v1.0.40 h1:9tNL5NwQUNLNOOYeFWb7DWGQWeISEhZFB/naEo09zt8=
-github.com/siper92/core-utils v1.0.40/go.mod h1:QeNr0MQmKOfVB1jdxijF9upIgJHmSpKmJagjVI92kMo=
+github.com/siper92/core-utils v1.0.42 h1:I/n4FMVLOsAuu5b1EQDZKL/kxaa4Ji9Gkoh0E3uZvHk=
+github.com/siper92/core-utils v1.0.42/go.mod h1:QeNr0MQmKOfVB1jdxijF9upIgJHmSpKmJagjVI92kMo=
 github.com/sosodev/duration v1.2.0 h1:pqK/FLSjsAADWY74SyWDCjOcd5l7H8GSnnOGEB9A1Us=
 github.com/sosodev/duration v1.2.0/go.mod h1:RQIBBX0+fMLc/D9+Jb/fwvVmo0eZvDDEERAikUR6SDg=
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
