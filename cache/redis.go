@@ -9,6 +9,7 @@ import (
 	"github.com/siper92/core-utils/config_utils"
 	"github.com/siper92/core-utils/type_utils"
 	"reflect"
+	"strings"
 	"time"
 )
 
@@ -73,6 +74,10 @@ func NewClient(cnf config_utils.RedisConfig, prefix string) (*RedisCacheProvider
 }
 
 func (r *RedisCacheProvider) toKey(key string) string {
+	if strings.Index(key, r.prefix) == 0 {
+		return key
+	}
+
 	return fmt.Sprintf("%s:%s", r.prefix, key)
 }
 
@@ -178,14 +183,10 @@ func (r *RedisCacheProvider) SaveAsJSON(key string, val any, ttl time.Duration) 
 		return err
 	}
 
-	return r.Save(r.toKey(key), valJson, ttl)
+	return r.Save(key, valJson, ttl)
 }
 
 func (r *RedisCacheProvider) LoadJSON(key string, result any) (any, error) {
-	if reflect.TypeOf(result).Kind() != reflect.Ptr {
-		return nil, errors.New("result argument must be a pointer")
-	}
-
 	val, err := r.Get(key)
 	if err != nil {
 		return nil, err
