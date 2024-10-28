@@ -18,7 +18,7 @@ func _toRedisMapValue(rawVal any, depth int) string {
 	switch val := rawVal.(type) {
 	case string, *string,
 		[]byte, *[]byte,
-		int32, int64, uint, uint32, uint64,
+		int, int32, int64, uint, uint32, uint64,
 		*int, *int32, *int64, *uint, *uint32, *uint64,
 		float32, float64, *float32, *float64,
 		bool, *bool,
