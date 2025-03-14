@@ -315,5 +315,5 @@ func (r *RedisCacheProvider) LoadObj(obj CacheableObject) error {
 }
 
 func (r *RedisCacheProvider) SaveObj(obj CacheableObject) error {
-	return r.Save(obj.CacheKey(), obj, obj.CacheTTL())
+	return r.saveMap(obj.CacheKey(), obj.GetCacheObject(), obj.CacheTTL())
 }
